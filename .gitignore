@@ -1,0 +1,2 @@
+# ignore test-related dependencies (auto-clone via Makefile)
+test-deps/
