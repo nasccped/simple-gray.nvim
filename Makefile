@@ -1,12 +1,36 @@
-NVIM_EXEC=nvim
-TEST_RUNNER=./test-aux/runner.lua
-NVIM_TEST_FLAGS=--headless -u $(TEST_RUNNER)
-NVIM_PREPEND_CMD='lua vim.opt.rtp:prepend(".")'
+GT=git
+NV=nvim
 
-test: $(TEST_RUNNER)
-	$(NVIM_EXEC) $(NVIM_TEST_FLAGS)
+TESTS=./tests
+TEST_DEPS=./test-deps
+SCRIPTS=./scripts
 
-launch:
-	nvim -c $(NVIM_PREPEND_CMD)
+TEST_INIT=$(SCRIPTS)/test_init.lua
+LAUNCH=$(SCRIPTS)/launch.lua
+MINI_PATH=$(TEST_DEPS)/mini.nvim
+MINI_URL=https://github.com/nvim-mini/mini.nvim
 
-.PHONY: test launch
+CLONE_FLAGS=--depth=1 --filter=blob:none
+TEST_FLAGS=--headless
+
+# create deps dir if not exists
+$(TEST_DEPS):
+	mkdir $@
+
+# clones mini.nvim if not exists
+$(MINI_PATH): $(TEST_DEPS)
+	$(GT) clone $(CLONE_FLAGS) $(MINI_URL) $@
+
+# testing requires mini.nvim dep
+test: $(TESTS) $(MINI_PATH) $(TEST_INIT)
+	$(NV) $(TEST_FLAGS) -u $(TEST_INIT) -c "lua MiniTest.run()"
+
+# easily launch neovim without adding plugin to config dir.
+launch: $(LAUNCH) $(MINI_PATH)
+	$(NV) -c "source $(LAUNCH)"
+
+# remove testing dependencies
+clean: $(TEST_DEPS)
+	rm -rf $<
+
+.PHONY: test launch clean
